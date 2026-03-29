@@ -13,8 +13,8 @@
 <style>
 /* ── TOKENS ── */
 :root{
-  --bg:#050a1a;--sf:#0a1530;--sf2:#0f1d40;--bd:#1a3060;
-  --tx:#b8ccd8;--dim:#3d5080;
+  --bg:#07090d;--sf:#0d1218;--sf2:#131a22;--bd:#1c2830;
+  --tx:#b8ccd8;--dim:#3d5060;
   --ac:#00e5ff;--ac2:#ff3d71;--ac3:#aaff00;--ac4:#ffd600;--ac5:#c77dff;
   --tx:#b8ccd8;--dim:#3d5060;
   --mono:'Space Mono',monospace;--sans:'Syne',sans-serif;
@@ -34,7 +34,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 /* ── HEADER ── */
 header{display:flex;align-items:center;justify-content:space-between;
 padding:9px 14px;border-bottom:1px solid var(–bd);
-background:#0a1d55;flex-shrink:0;gap:8px}
+background:rgba(7,9,13,.97);flex-shrink:0;gap:8px}
 body.day header{background:rgba(232,240,248,.97)}
 .logo{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .logo-ring{width:24px;height:24px;border-radius:50%;border:2px solid var(–ac);
@@ -252,7 +252,7 @@ body.day .mob-panel{background:#fff}
 .mob-panel::-webkit-scrollbar{width:3px}
 .mob-panel::-webkit-scrollbar-thumb{background:var(–bd)}
 
-@media(max-width:820px){
+@media(max-width:1100px){
 /* Hide desktop sidebar */
 #sidebar{display:none}
 
@@ -263,7 +263,7 @@ body.day .mob-panel{background:#fff}
 #main{flex-direction:column}
 #mapWrap{flex:1;margin-bottom:56px}
 
-/* Header simplified */
+/* Header simplified — hide pills, show only logo and buttons */
 .hpills{display:none}
 header{padding:8px 12px}
 
@@ -277,7 +277,7 @@ header{padding:8px 12px}
 .map-ov{top:8px;right:8px}
 }
 
-@media(min-width:821px){
+@media(min-width:1101px){
 /* Desktop: sidebar visible, tab bar hidden */
 #tabBar{display:none}
 .mob-panel{display:none !important}
@@ -297,7 +297,7 @@ header{padding:8px 12px}
   <header>
     <div class="logo">
       <div class="logo-ring"><div class="logo-dot"></div></div>
-      <div class="logo-text">TRACK<span>OS</span></div>
+      <div class="logo-text">TRACK<span>OS</span> <span style="font-size:10px;color:var(--ac4);opacity:.8">2.0</span></div>
     </div>
     <div class="hpills">
       <div class="hp" id="hpGps"><span id="hpGpsTxt">GPS OFFLINE</span></div>
