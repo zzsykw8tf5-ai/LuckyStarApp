@@ -253,36 +253,30 @@ body.day .mob-panel{background:#fff}
 .mob-panel::-webkit-scrollbar-thumb{background:var(–bd)}
 
 @media(max-width:1100px){
-/* Hide desktop sidebar */
 #sidebar{display:none}
-
-/* Show tab bar */
 #tabBar{display:flex}
-
-/* Map takes full screen minus header and tab bar */
 #main{flex-direction:column}
 #mapWrap{flex:1;margin-bottom:56px}
-
-/* Header simplified — hide pills, show only logo and buttons */
 .hpills{display:none}
 header{padding:8px 12px}
-
-/* Kai panel above tab bar */
 #kaiPanel{bottom:56px;max-height:50vh}
-
-/* Overlay position box */
-#posBox{top:8px;left:8px;right:auto}
-
-/* Map controls */
+#posBox{top:8px;left:8px}
 .map-ov{top:8px;right:8px}
 }
-
 @media(min-width:1101px){
-/* Desktop: sidebar visible, tab bar hidden */
 #tabBar{display:none}
 .mob-panel{display:none !important}
 #sidebar{display:flex}
 }
+
+/* Force mobile layout class */
+body.mobile #sidebar{display:none !important}
+body.mobile #tabBar{display:flex !important}
+body.mobile #main{flex-direction:column}
+body.mobile #mapWrap{flex:1;margin-bottom:56px}
+body.mobile .hpills{display:none}
+body.mobile #kaiPanel{bottom:56px;max-height:50vh}
+body.mobile .map-ov{top:8px;right:8px}
 
 @keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(0,229,255,.4)}50%{box-shadow:0 0 0 7px rgba(0,229,255,0)}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
@@ -1186,6 +1180,15 @@ function speak(text){
   if(de)utt.voice=de;
   synth.speak(utt);
 }
+
+// ── DEVICE DETECTION ─────────────────────────────────────────────
+(function(){
+  var isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  var isIPad = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  if(isTouch || isIPad) {
+    document.body.classList.add('mobile');
+  }
+})();
 
 // ── MOBILE TABS ───────────────────────────────────────────────────
 var currentMobTab = 'map';
