@@ -447,9 +447,14 @@ body.mobile .map-ov{top:8px;right:8px}
         <div class="kai-name">Kai</div>
         <div class="kai-status">Dein Toernassistent</div>
       </div>
+      <button onclick="promptApiKey()" title="API-Key ändern" style="width:26px;height:26px;border-radius:6px;border:1px solid var(--bd);background:transparent;color:var(--dim);cursor:pointer;font-size:12px" id="kaiKeyBtn">&#128273;</button>
       <button id="kaiClose" onclick="toggleKai()">&#10005;</button>
     </div>
     <div id="kaiMessages"></div>
+    <div id="kaiKeyRow" style="display:none;gap:6px;padding:8px 14px;border-top:1px solid var(--bd);flex-shrink:0">
+      <input id="kaiKeyInput" placeholder="sk-ant-api03-..." style="flex:1;background:var(--sf2);border:1px solid var(--ac5);border-radius:8px;color:var(--tx);font-family:var(--mono);font-size:10px;padding:7px 10px;outline:none" onkeydown="if(event.key==='Enter')saveApiKey()"/>
+      <button onclick="saveApiKey()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--ac5);background:rgba(199,125,255,.15);color:var(--ac5);font-family:var(--mono);font-size:10px;cursor:pointer;white-space:nowrap">&#128273; Speichern</button>
+    </div>
     <div id="kaiInput">
       <button id="kaiSpeak" onclick="toggleSpeak()" title="Sprachausgabe">&#128266;</button>
       <input id="kaiText" placeholder="Frag Kai..." onkeydown="if(event.key==='Enter')sendKai()"/>
@@ -572,9 +577,9 @@ body.mobile .map-ov{top:8px;right:8px}
 
 <script>
 // ════════════════════════════════════════════════════════════════
-//  CONFIG — trage deinen Anthropic API-Key hier ein
+//  API-Key wird im Browser (localStorage) gespeichert – nie im Code
 // ════════════════════════════════════════════════════════════════
-var ANTHROPIC_KEY = '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';
+var ANTHROPIC_KEY = localStorage.getItem('anthropic_key') || '';
 
 // ── STATE ─────────────────────────────────────────────────────────
 var COLORS=['#00e5ff','#aaff00','#ff3d71','#ffd600','#c77dff','#ff9a3c'];
@@ -1074,9 +1079,10 @@ function addKaiMsg(role,text,cls){
 }
 
 function callClaude(userMsg){
-  if(!ANTHROPIC_KEY||ANTHROPIC_KEY==='DEIN_API_KEY_HIER'){
+  if(!ANTHROPIC_KEY){
     var el=document.getElementById('kaiThinking');
-    if(el){el.className='msg kai';el.id='';el.innerHTML='Bitte trage deinen Anthropic API-Key in den Code ein (Variable ANTHROPIC_KEY).';};
+    if(el){el.className='msg kai';el.id='';el.innerHTML='&#128273; <b>API-Key fehlt.</b> Bitte unten eingeben.';}
+    promptApiKey();
     return;
   }
 
@@ -1127,6 +1133,22 @@ function callClaude(userMsg){
       var msg=err&&err.message?err.message:'Netzwerkfehler – CORS? Bitte über http://localhost statt file:// öffnen.';
       if(el){el.className='msg kai';el.id='';el.innerHTML='Fehler: '+msg;}
     });
+}
+
+function promptApiKey(){
+  var row=document.getElementById('kaiKeyRow');
+  if(row){row.style.display='flex';document.getElementById('kaiKeyInput').focus();}
+}
+
+function saveApiKey(){
+  var val=document.getElementById('kaiKeyInput').value.trim();
+  if(!val.startsWith('sk-ant-')){toast('Ungültiger Key – beginnt mit sk-ant-...','err');return;}
+  localStorage.setItem('anthropic_key',val);
+  ANTHROPIC_KEY=val;
+  document.getElementById('kaiKeyRow').style.display='none';
+  document.getElementById('kaiKeyInput').value='';
+  toast('API-Key gespeichert','ok');
+  addKaiMsg('kai','Key gespeichert! Stell mir jetzt eine Frage.');
 }
 
 function askKaiAbout(name){
