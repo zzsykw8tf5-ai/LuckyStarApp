@@ -1122,8 +1122,10 @@ function callClaude(userMsg){
       if(el){el.className='msg kai';el.id='';el.innerHTML=reply;}
       speak(reply);
     }).catch(function(err){
+      console.error('Kai API error:', err);
       var el=document.getElementById('kaiThinking');
-      if(el){el.className='msg kai';el.id='';el.innerHTML='Fehler: '+(err.message||'Verbindung fehlgeschlagen.');}
+      var msg=err&&err.message?err.message:'Netzwerkfehler – CORS? Bitte über http://localhost statt file:// öffnen.';
+      if(el){el.className='msg kai';el.id='';el.innerHTML='Fehler: '+msg;}
     });
 }
 
