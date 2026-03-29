@@ -949,25 +949,59 @@ function callClaude(userMsg){
 
   kaiMessages.push({role:'user',content:ctx+'\nNutzerfrage: '+userMsg});
 
-  fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',
-      max_tokens:400,
-      system:'Du bist Kai, ein erfahrener Segeltoernassistent. Antworte auf Deutsch. Sei praktisch, freundlich und praegnant. Maximal 3 Saetze.',
-      messages:kaiMessages
-    })
-  }).then(function(r){return r.json();}).then(function(data){
-    var reply=(data.content&&data.content[0]&&data.content[0].text)||'Entschuldigung, ich konnte keine Antwort generieren.';
-    kaiMessages.push({role:'assistant',content:reply});
-    var el=document.getElementById('kaiThinking');
-    if(el){el.className='msg kai';el.id='';el.innerHTML=reply;}
-    speak(reply);
-  }).catch(function(e){
-    var el=document.getElementById('kaiThinking');
-    if(el){el.className='msg kai';el.id='';el.innerHTML='Verbindungsfehler. Bitte pruefen Sie Ihren API-Key.';}
-  });
+  var payload = {
+    model:'claude-sonnet-4-20250514',
+    max_tokens:400,
+    system:'Du bist Kai, ein erfahrener Segeltoernassistent. Antworte auf Deutsch. Sei praktisch, freundlich und praegnant. Maximal 3 Saetze.',
+    messages:kaiMessages
+  };
+
+  var TARGET = 'https://api.anthropic.com/v1/messages';
+  var PROXIES = [
+    'https://corsproxy.io/?' + encodeURIComponent(TARGET),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(TARGET),
+    TARGET // direct last attempt
+  ];
+
+  function tryProxy(idx) {
+    if(idx >= PROXIES.length) {
+      var el=document.getElementById('kaiThinking');
+      if(el){el.className='msg kai';el.id='';el.innerHTML='Verbindung fehlgeschlagen. Bitte spaeter erneut versuchen.';}
+      return;
+    }
+    var url = PROXIES[idx];
+    var headers = {'Content-Type':'application/json'};
+    // For direct call we need API key in header — proxies forward the body
+    if(url === TARGET) {
+      headers['x-api-key'] = ANTHROPIC_KEY;
+      headers['anthropic-version'] = '2023-06-01';
+    } else {
+      // embed key in payload comment so proxy passes it through body
+      payload['x-api-key'] = ANTHROPIC_KEY;
+      payload['anthropic-version'] = '2023-06-01';
+    }
+    fetch(url, {
+      method:'POST',
+      headers:headers,
+      body:JSON.stringify(payload)
+    }).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(data){
+      // cleanup payload
+      delete payload['x-api-key'];
+      delete payload['anthropic-version'];
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||'Keine Antwort erhalten.';
+      kaiMessages.push({role:'assistant',content:reply});
+      var el=document.getElementById('kaiThinking');
+      if(el){el.className='msg kai';el.id='';el.innerHTML=reply;}
+      speak(reply);
+    }).catch(function(){
+      tryProxy(idx+1);
+    });
+  }
+
+  tryProxy(0);
 }
 
 function askKaiAbout(name){
