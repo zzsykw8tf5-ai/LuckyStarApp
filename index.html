@@ -61,10 +61,56 @@ display:flex;align-items:center;justify-content:center;transition:all .15s}
 #main{display:flex;flex:1;overflow:hidden}
 
 /* ── SIDEBAR ── */
-#sidebar{width:275px;background:var(--sf);border-right:1px solid var(--bd);
-display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;transition:transform .3s}
-.ss{padding:12px 14px;border-bottom:1px solid var(--bd);flex-shrink:0}
-.sl{font-size:8px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;margin-bottom:9px}
+#sidebar{width:280px;background:var(--sf);border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+
+/* Sidebar tab nav */
+.snav{display:flex;border-bottom:2px solid var(--bd);flex-shrink:0}
+.snav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:10px 4px;cursor:pointer;border-bottom:2px solid transparent;
+  margin-bottom:-2px;transition:all .15s;color:var(--dim);font-size:7px;
+  letter-spacing:.08em;text-transform:uppercase;font-family:var(--mono)}
+.snav-item:hover{color:var(--tx)}
+.snav-item.active{color:var(--ac);border-bottom-color:var(--ac)}
+.snav-icon{font-size:18px;line-height:1}
+
+/* Sidebar panels */
+.spanel{display:none;flex:1;overflow-y:auto;flex-direction:column}
+.spanel.active{display:flex}
+.spanel::-webkit-scrollbar{width:3px}
+.spanel::-webkit-scrollbar-thumb{background:var(--bd)}
+
+/* Section inside panel */
+.sec{padding:14px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.sec-title{font-size:9px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;
+  margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.sec-title::after{content:’’;flex:1;height:1px;background:var(--bd)}
+
+/* Menu rows (replace buttons) */
+.mrow{display:flex;align-items:center;justify-content:space-between;
+  padding:9px 0;border-bottom:1px solid var(--bd);cursor:pointer;transition:color .15s}
+.mrow:last-child{border:none}
+.mrow:hover{color:var(--ac)}
+.mrow-label{font-size:10px;display:flex;align-items:center;gap:8px}
+.mrow-icon{font-size:15px;width:20px;text-align:center}
+.mrow-val{font-size:10px;color:var(--dim)}
+.mrow.on .mrow-val{color:var(--ac3)}
+.mrow.on .mrow-label{color:var(--tx)}
+
+/* Toggle switch */
+.tog-sw{width:32px;height:18px;border-radius:9px;background:var(--bd);position:relative;
+  transition:background .2s;flex-shrink:0}
+.tog-sw::after{content:’’;position:absolute;left:2px;top:2px;width:14px;height:14px;
+  border-radius:50%;background:#fff;transition:transform .2s}
+.mrow.on .tog-sw{background:var(--ac3)}
+.mrow.on .tog-sw::after{transform:translateX(14px)}
+
+/* Route planner call-to-action */
+.route-cta{margin:14px;padding:12px;border-radius:8px;background:rgba(170,255,0,.06);
+  border:1px dashed rgba(170,255,0,.3);text-align:center;color:var(--dim);font-size:9px;
+  line-height:2;display:none}
+.route-cta.active{display:block;color:var(--ac3);border-color:var(--ac3);
+  background:rgba(170,255,0,.08)}
 
 /* WEATHER SIDEBAR */
 .wx-tabs{display:flex;gap:4px;margin-bottom:9px}
@@ -93,7 +139,7 @@ letter-spacing:.06em;width:auto;text-align:center}
 .fc-t{color:var(--dim);width:32px;flex-shrink:0}.fc-ic{width:16px}.fc-tmp{color:#fff;flex:1}
 .fc-w{color:var(--ac);width:44px;text-align:right}.fc-g{color:var(--ac4);font-size:8px;width:38px;text-align:right}
 
-/* GPS STATS */
+/* Stats grid */
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .stat{background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:9px 10px}
 .stat-l{font-size:8px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:2px}
@@ -103,7 +149,39 @@ letter-spacing:.06em;width:auto;text-align:center}
 #graphWrap{height:38px;background:var(--sf2);border-radius:5px;overflow:hidden;margin-top:7px}
 #speedCanvas{display:block;width:100%;height:100%}
 
-/* BUTTONS */
+/* Tracking action row */
+.track-row{display:flex;gap:8px;padding:14px;flex-shrink:0}
+.track-btn{flex:1;padding:10px;border-radius:8px;font-family:var(--mono);font-size:10px;
+  cursor:pointer;border:none;font-weight:700;letter-spacing:.05em;transition:all .15s}
+.track-btn.start{background:var(--ac);color:#000}
+.track-btn.start:disabled{opacity:.3;cursor:not-allowed}
+.track-btn.stop{background:transparent;border:1px solid var(--ac2);color:var(--ac2)}
+.track-btn.stop:disabled{opacity:.3;cursor:not-allowed}
+
+/* Route summary cards */
+.rs-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.rsc{background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:7px 9px}
+.rsc-l{font-size:7px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:2px}
+.rsc-v{font-size:12px;font-weight:700;color:#fff}
+
+/* Waypoint list */
+.wp-scroll{flex:1;overflow-y:auto;padding:6px 8px}
+.wp-scroll::-webkit-scrollbar{width:3px}
+.wp-scroll::-webkit-scrollbar-thumb{background:var(--bd)}
+.wp-item{display:flex;align-items:center;gap:6px;padding:7px 9px;
+  border-radius:7px;border:1px solid var(--bd);margin-bottom:4px;
+  background:var(--sf2);position:relative;overflow:hidden}
+.wp-item::before{content:’’;position:absolute;left:0;top:0;bottom:0;width:3px}
+.wp-item.s::before{background:var(--ac3)}.wp-item.e::before{background:var(--ac2)}.wp-item.m::before{background:var(--ac)}
+.wp-info{flex:1;min-width:0}
+.wp-name{font-family:var(--sans);font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wp-sub{font-size:8px;color:var(--dim);margin-top:1px}
+.wp-wind{font-size:8px;color:var(--ac);margin-top:1px}
+.wp-del{width:20px;height:20px;border:none;background:transparent;color:var(--dim);cursor:pointer;font-size:10px;flex-shrink:0}
+.wp-del:hover{color:var(--ac2)}
+.empty{text-align:center;padding:24px 14px;color:var(--dim);font-size:9px;line-height:2.4}
+
+/* BUTTONS (kept for mobile panels) */
 .btn-row{display:flex;gap:5px;padding:10px 12px;border-bottom:1px solid var(--bd);flex-shrink:0}
 .btn{display:flex;align-items:center;justify-content:center;gap:5px;
 padding:8px 10px;border-radius:7px;font-family:var(--mono);font-size:9px;
@@ -116,31 +194,8 @@ background:var(--sf2);color:var(--tx);flex:1;transition:all .15s;white-space:now
 .btn.tog.on{border-color:var(--ac4);color:var(--ac4);background:rgba(255,214,0,.05)}
 .btn.route-on{border-color:var(--ac3);color:var(--ac3);background:rgba(170,255,0,.06)}
 
-/* LAYER GRID */
+/* LAYER GRID (kept for mobile panels) */
 .layer-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-
-/* WAYPOINT LIST */
-.wp-scroll{flex:1;overflow-y:auto;padding:6px 8px}
-.wp-scroll::-webkit-scrollbar{width:3px}
-.wp-scroll::-webkit-scrollbar-thumb{background:var(--bd)}
-.wp-item{display:flex;align-items:center;gap:6px;padding:7px 9px;
-border-radius:7px;border:1px solid var(--bd);margin-bottom:4px;
-background:var(--sf2);position:relative;overflow:hidden}
-.wp-item::before{content:’’;position:absolute;left:0;top:0;bottom:0;width:3px}
-.wp-item.s::before{background:var(--ac3)}.wp-item.e::before{background:var(--ac2)}.wp-item.m::before{background:var(--ac)}
-.wp-info{flex:1;min-width:0}
-.wp-name{font-family:var(--sans);font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wp-sub{font-size:8px;color:var(--dim);margin-top:1px}
-.wp-wind{font-size:8px;color:var(--ac);margin-top:1px}
-.wp-del{width:20px;height:20px;border:none;background:transparent;color:var(--dim);cursor:pointer;font-size:10px;flex-shrink:0}
-.wp-del:hover{color:var(--ac2)}
-.empty{text-align:center;padding:20px 10px;color:var(--dim);font-size:9px;line-height:2.2}
-
-/* ROUTE SUMMARY */
-.rs-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-.rsc{background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:7px 9px}
-.rsc-l{font-size:7px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:2px}
-.rsc-v{font-size:12px;font-weight:700;color:#fff}
 
 /* ── MAP ── */
 #mapWrap{flex:1;position:relative;overflow:hidden}
