@@ -149,8 +149,12 @@ letter-spacing:.06em;width:auto;text-align:center}
 #graphWrap{height:38px;background:var(--sf2);border-radius:5px;overflow:hidden;margin-top:7px}
 #speedCanvas{display:block;width:100%;height:100%}
 
-/* Tracking action row */
-.track-row{display:flex;gap:8px;padding:14px;flex-shrink:0}
+/* Boat data inputs */
+.boat-input{width:62px;background:var(--sf2);border:1px solid var(--bd);border-radius:5px;
+  color:var(--tx);font-family:var(--mono);font-size:11px;padding:4px 6px;
+  text-align:right;outline:none}
+.boat-input:focus{border-color:var(--ac)}
+.unit{font-size:9px;color:var(--dim);width:20px}
 .track-btn{flex:1;padding:10px;border-radius:8px;font-family:var(--mono);font-size:10px;
   cursor:pointer;border:none;font-weight:700;letter-spacing:.05em;transition:all .15s}
 .track-btn.start{background:var(--ac);color:#000}
@@ -372,11 +376,11 @@ body.mobile #kaiPanel{bottom:60px;max-height:50vh}
     <div class="snav-item" id="snav-route" onclick="snavTab('route')">
       <span class="snav-icon">🧭</span>ROUTE
     </div>
-    <div class="snav-item" id="snav-track" onclick="snavTab('track')">
-      <span class="snav-icon">📍</span>TRACKING
-    </div>
     <div class="snav-item" id="snav-layer" onclick="snavTab('layer')">
       <span class="snav-icon">🗂</span>EBENEN
+    </div>
+    <div class="snav-item" id="snav-boot" onclick="snavTab('boot')">
+      <span class="snav-icon">⛵</span>BOOT
     </div>
   </nav>
 
@@ -470,31 +474,6 @@ body.mobile #kaiPanel{bottom:60px;max-height:50vh}
     </div>
   </div>
 
-  <!-- TRACKING PANEL -->
-  <div class="spanel" id="spanel-track">
-    <div class="sec">
-      <div class="sec-title">GPS Tracking</div>
-      <div class="stats">
-        <div class="stat ca"><div class="stat-l">Geschw.</div><div class="stat-v" id="vSpd">--<small>km/h</small></div></div>
-        <div class="stat"><div class="stat-l">Höhe</div><div class="stat-v" id="vAlt">--<small>m</small></div></div>
-        <div class="stat cg"><div class="stat-l">Distanz</div><div class="stat-v" id="vDist">0<small>m</small></div></div>
-        <div class="stat cr"><div class="stat-l">Punkte</div><div class="stat-v" id="vPts">0</div></div>
-      </div>
-      <div id="graphWrap"><canvas id="speedCanvas"></canvas></div>
-    </div>
-    <div class="track-row">
-      <button class="track-btn start" id="btnStart" onclick="startTracking()">▶ START</button>
-      <button class="track-btn stop" id="btnStop" onclick="stopTracking()" disabled>■ STOP</button>
-    </div>
-    <div class="sec">
-      <div class="sec-title">Anzeige</div>
-      <div class="mrow" onclick="toggleDay()">
-        <div class="mrow-label"><span class="mrow-icon">🌙</span>Tag / Nacht</div>
-        <div class="mrow-val" id="dayModeLbl">Nacht</div>
-      </div>
-    </div>
-  </div>
-
   <!-- EBENEN PANEL -->
   <div class="spanel" id="spanel-layer">
     <div class="sec">
@@ -522,6 +501,70 @@ body.mobile #kaiPanel{bottom:60px;max-height:50vh}
       <div class="mrow" id="mrowShop" onclick="togLayer('shop');updateLayerRow('shop')">
         <div class="mrow-label"><span class="mrow-icon">🛒</span>Versorgung</div>
         <div class="tog-sw" id="swShop"></div>
+      </div>
+      <div class="mrow" id="mrowFuel" onclick="togLayer('fuel');updateLayerRow('fuel')">
+        <div class="mrow-label"><span class="mrow-icon">⛽</span>Tankstellen</div>
+        <div class="tog-sw" id="swFuel"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOOT PANEL -->
+  <div class="spanel" id="spanel-boot">
+    <div class="sec">
+      <div class="sec-title">GPS Tracking</div>
+      <div class="stats">
+        <div class="stat ca"><div class="stat-l">Geschw.</div><div class="stat-v" id="vSpd">--<small>km/h</small></div></div>
+        <div class="stat"><div class="stat-l">Höhe</div><div class="stat-v" id="vAlt">--<small>m</small></div></div>
+        <div class="stat cg"><div class="stat-l">Distanz</div><div class="stat-v" id="vDist">0<small>m</small></div></div>
+        <div class="stat cr"><div class="stat-l">Punkte</div><div class="stat-v" id="vPts">0</div></div>
+      </div>
+      <div id="graphWrap"><canvas id="speedCanvas"></canvas></div>
+    </div>
+    <div class="track-row">
+      <button class="track-btn start" id="btnStart" onclick="startTracking()">▶ START</button>
+      <button class="track-btn stop" id="btnStop" onclick="stopTracking()" disabled>■ STOP</button>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Bootsdaten</div>
+      <div class="mrow" id="mrowBoatType" onclick="toggleBoatType()">
+        <div class="mrow-label"><span class="mrow-icon">⛵</span>Bootstyp</div>
+        <div class="mrow-val" id="boatTypeLbl">Segelboot</div>
+      </div>
+      <div class="mrow">
+        <div class="mrow-label"><span class="mrow-icon">📐</span>Tiefgang</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="boatDraft" class="boat-input" value="1.5" min="0.1" max="8" step="0.1" onchange="saveBoatData()">
+          <span class="unit">m</span>
+        </div>
+      </div>
+      <div class="mrow">
+        <div class="mrow-label"><span class="mrow-icon">💨</span>Segel max.</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="boatSailSpd" class="boat-input" value="6.5" min="1" max="20" step="0.5" onchange="saveBoatData()">
+          <span class="unit">kn</span>
+        </div>
+      </div>
+      <div class="mrow">
+        <div class="mrow-label"><span class="mrow-icon">🚢</span>Motor max.</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="boatMotorSpd" class="boat-input" value="5.0" min="1" max="30" step="0.5" onchange="saveBoatData()">
+          <span class="unit">kn</span>
+        </div>
+      </div>
+      <div class="mrow">
+        <div class="mrow-label"><span class="mrow-icon">⚠</span>Min. Tiefe</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="minDepth" class="boat-input" value="2.0" min="0.5" max="10" step="0.5" onchange="saveBoatData()">
+          <span class="unit">m</span>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Anzeige</div>
+      <div class="mrow" onclick="toggleDay()">
+        <div class="mrow-label"><span class="mrow-icon">🌙</span>Tag / Nacht</div>
+        <div class="mrow-val" id="dayModeLbl">Nacht</div>
       </div>
     </div>
   </div>
@@ -594,11 +637,11 @@ body.mobile #kaiPanel{bottom:60px;max-height:50vh}
       <button class="tab-btn" id="tab-route" onclick="mobTab('route')">
         <span class="tab-btn-icon">&#9973;</span>ROUTE
       </button>
-      <button class="tab-btn" id="tab-track" onclick="mobTab('track')">
-        <span class="tab-btn-icon">&#128205;</span>TRACKING
-      </button>
       <button class="tab-btn" id="tab-layer" onclick="mobTab('layer')">
         <span class="tab-btn-icon">&#9870;</span>EBENEN
+      </button>
+      <button class="tab-btn" id="tab-boot" onclick="mobTab('boot')">
+        <span class="tab-btn-icon">&#9875;</span>BOOT
       </button>
       <button class="tab-btn" id="tab-kai" onclick="mobTab('kai')">
         <span class="tab-btn-icon">&#129302;</span>KAI
@@ -628,8 +671,9 @@ var map, seaLayer, windGridData=null;
 var watchId=null, tracking=false;
 var track=[], polyline, myMarker;
 var saved=[], speedHist=[], toastT;
-var poiLayers={harbour:null,lock:null,bridge:null,shop:null};
-var layerOn={sea:false,wind:true,harbour:false,lock:false,bridge:false,shop:false};
+var poiLayers={harbour:null,lock:null,bridge:null,shop:null,fuel:null};
+var layerOn={sea:false,wind:true,harbour:false,lock:false,bridge:false,shop:false,fuel:false};
+var boatData={type:'sail',draft:1.5,sailSpd:6.5,motorSpd:5.0,minDepth:2.0};
 var routeMode=false, waypoints=[], routeLines=[], wpMarkers=[];
 var lastLat=null, lastLon=null;
 var kaiMessages=[], speakOn=false;
@@ -814,7 +858,7 @@ function togLayer(name){
 }
 
 function reloadActivePOIs(){
-  ['harbour','lock','bridge','shop'].forEach(function(t){if(layerOn[t])loadPOI(t);});
+  ['harbour','lock','bridge','shop','fuel'].forEach(function(t){if(layerOn[t])loadPOI(t);});
 }
 
 function loadPOI(type){
@@ -825,10 +869,11 @@ function loadPOI(type){
     harbour:'[out:json][timeout:25];(node["harbour"="yes"]('+s+','+w+','+n+','+e+');node["leisure"="marina"]('+s+','+w+','+n+','+e+');node["seamark:type"="harbour"]('+s+','+w+','+n+','+e+'););out body;',
     lock:'[out:json][timeout:25];(node["waterway"="lock_gate"]('+s+','+w+','+n+','+e+');way["waterway"="lock"]('+s+','+w+','+n+','+e+'););out center body;',
     bridge:'[out:json][timeout:25];way["bridge"="yes"]["maxheight"]('+s+','+w+','+n+','+e+');out center body;',
-    shop:'[out:json][timeout:25];(node["shop"="supermarket"]('+s+','+w+','+n+','+e+');node["shop"="bakery"]('+s+','+w+','+n+','+e+');node["amenity"="fuel"]('+s+','+w+','+n+','+e+');node["amenity"="restaurant"]('+s+','+w+','+n+','+e+'););out body;'
+    shop:'[out:json][timeout:25];(node["shop"="supermarket"]('+s+','+w+','+n+','+e+');node["shop"="convenience"]('+s+','+w+','+n+','+e+');node["shop"="bakery"]('+s+','+w+','+n+','+e+');node["amenity"="restaurant"]('+s+','+w+','+n+','+e+');node["amenity"="cafe"]('+s+','+w+','+n+','+e+'););out body;',
+    fuel:'[out:json][timeout:25];(node["amenity"="fuel"]('+s+','+w+','+n+','+e+');node["seamark:type"="fuel_station"]('+s+','+w+','+n+','+e+');node["waterway"="fuel"]('+s+','+w+','+n+','+e+'););out body;'
   };
-  var cols={harbour:'#00e5ff',lock:'#aaff00',bridge:'#ffd600',shop:'#ff9a3c'};
-  var icons={harbour:'&#9875;',lock:'&#9783;',bridge:'&#9136;',shop:'&#128722;'};
+  var cols={harbour:'#00e5ff',lock:'#aaff00',bridge:'#ffd600',shop:'#ff9a3c',fuel:'#ff6b35'};
+  var icons={harbour:'&#9875;',lock:'&#9783;',bridge:'&#9136;',shop:'&#128722;',fuel:'&#9981;'};
 
   var url='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(queries[type]);
   fetch(url,{mode:'cors'}).then(function(r){return r.json();}).then(function(data){
@@ -839,20 +884,27 @@ function loadPOI(type){
       var lon=el.lon||(el.center&&el.center.lon);
       if(!lat||!lon)return;
       var tags=el.tags||{};
-      var name=tags.name||tags['seamark:name']||(type==='harbour'?'Hafen':type==='lock'?'Schleuse':type==='bridge'?'Bruecke':'Versorgung');
-      var shopType=tags.shop||tags.amenity||'';
-      var shopIcon=shopType==='supermarket'?'&#128717;':shopType==='bakery'?'&#129360;':shopType==='fuel'?'&#9981;':shopType==='restaurant'?'&#127374;':icons[type];
+      var typeNames={harbour:'Hafen',lock:'Schleuse',bridge:'Brücke',shop:'Versorgung',fuel:'Tankstelle'};
+      var name=tags.name||tags['seamark:name']||typeNames[type]||type;
+      var subType=tags.shop||tags.amenity||tags['seamark:type']||'';
+      var subIcon=subType==='supermarket'?'🛒':subType==='convenience'?'🏪':subType==='bakery'?'🥐':
+                  subType==='restaurant'?'🍽':subType==='cafe'?'☕':subType==='fuel'?'⛽':icons[type];
 
       var icon=L.divIcon({
-        html:'<div style="width:26px;height:26px;border-radius:50%;background:rgba(7,9,13,.9);border:2px solid '+cols[type]+';display:flex;align-items:center;justify-content:center;font-size:12px">'+(type==='shop'?shopIcon:icons[type])+'</div>',
-        className:'',iconSize:[26,26],iconAnchor:[13,13]
+        html:'<div style="width:28px;height:28px;border-radius:50%;background:rgba(7,9,13,.92);border:2px solid '+cols[type]+';display:flex;align-items:center;justify-content:center;font-size:14px">'+((type==='shop'||type==='fuel')?subIcon:icons[type])+'</div>',
+        className:'',iconSize:[28,28],iconAnchor:[14,14]
       });
 
       var popup='<div class="pop"><h4>'+name+'</h4>';
+      if(tags.opening_hours){
+        var isOpen=checkOpen(tags.opening_hours);
+        popup+='<div class="pop-row"><span class="pop-k">Geöffnet</span><span class="pop-v" style="color:'+(isOpen?'var(--ac3)':'var(--ac2)')+'">&#9679; '+(isOpen?'Jetzt offen':'Geschlossen')+'</span></div>';
+        popup+='<div class="pop-row"><span class="pop-k">Zeiten</span><span class="pop-v" style="font-size:9px;max-width:130px;word-break:break-word">'+tags.opening_hours+'</span></div>';
+      }
       if(tags['contact:phone']||tags.phone)popup+='<div class="pop-row"><span class="pop-k">Tel</span><span class="pop-v"><a href="tel:'+(tags['contact:phone']||tags.phone)+'">'+(tags['contact:phone']||tags.phone)+'</a></span></div>';
       if(tags['seamark:radio_station:channel']||tags.vhf)popup+='<div class="pop-row"><span class="pop-k">VHF</span><span class="pop-v" style="color:var(--ac4)">CH '+(tags['seamark:radio_station:channel']||tags.vhf)+'</span></div>';
-      if(tags.maxheight)popup+='<div class="pop-row"><span class="pop-k">Hoehe</span><span class="pop-v" style="color:var(--ac4)">'+tags.maxheight+' m</span></div>';
-      if(tags.opening_hours)popup+='<div class="pop-row"><span class="pop-k">Zeiten</span><span class="pop-v" style="font-size:9px">'+tags.opening_hours+'</span></div>';
+      if(tags.maxheight)popup+='<div class="pop-row"><span class="pop-k">Höhe</span><span class="pop-v" style="color:var(--ac4)">'+tags.maxheight+' m</span></div>';
+      if(type==='fuel'&&tags['fuel:diesel'])popup+='<div class="pop-row"><span class="pop-k">Diesel</span><span class="pop-v" style="color:var(--ac3)">✓</span></div>';
       if(tags.operator)popup+='<div class="pop-row"><span class="pop-k">Betreiber</span><span class="pop-v">'+tags.operator+'</span></div>';
       popup+='<div style="margin-top:5px;display:flex;gap:6px">'
         +'<a href="https://maps.google.com/?q='+lat+','+lon+'" target="_blank" style="color:var(--ac);font-size:9px">Google Maps</a>'
@@ -963,8 +1015,8 @@ function addWP(lat,lon){
   toast('WP '+waypoints.length,'ok');
 }
 
-var MODE_LABELS = { tack:'⚡KREUZEN', close:'↗ AM WIND', reach:'→ HALBWIND', broad:'↘ RAUMSCHOTS', run:'↓ VOR DEM WIND' };
-var MODE_COLS   = { tack:'#ff3d71', close:'#ffd600', reach:'#aaff00', broad:'#00e5ff', run:'#c77dff' };
+var MODE_LABELS = { tack:'⚡KREUZEN', close:'↗ AM WIND', reach:'→ HALBWIND', broad:'↘ RAUMSCHOTS', run:'↓ VOR DEM WIND', motor:'🚢 MOTOR' };
+var MODE_COLS   = { tack:'#ff3d71', close:'#ffd600', reach:'#aaff00', broad:'#00e5ff', run:'#c77dff', motor:'#ff9a3c' };
 
 function drawRouteLines(){
   routeLines.forEach(function(l){map.removeLayer(l);});routeLines=[];
@@ -1062,13 +1114,19 @@ function legCalc(a, b) {
   var absTwa = Math.abs(twa);
   var mode, sailedNm, timeH, effSpd, tackAngle=null;
 
+  // Motor mode: ignore wind, use boat motor speed
+  if(boatData.type === 'motor') {
+    var spd = boatData.motorSpd;
+    return {distNm:distNm,sailedNm:distNm,timeH:distNm/spd,effSpd:spd,
+            twa:absTwa,mode:'motor',tackAngle:null,brg:brg,wind:w,windKn:windKn};
+  }
+
   if(absTwa < 40) {
     // Nogo-Zone → muss kreuzen
     var opt = optimalTack(windKn);
     tackAngle = opt.angle;
-    // Tatsächlich gesegelte Distanz: Zickzack kostet extra Meilen
     sailedNm = distNm / Math.cos(opt.angle * Math.PI / 180);
-    timeH = distNm / opt.vmg; // Zeit = Luftlinie / VMG (nicht gesegelte Dist!)
+    timeH = distNm / opt.vmg;
     effSpd = opt.vmg;
     mode = 'tack';
   } else {
@@ -1200,10 +1258,57 @@ function toggleDay(){
 
 // ── SIDEBAR NAV ───────────────────────────────────────────────────
 function snavTab(tab) {
-  ['wx','route','track','layer'].forEach(function(t) {
-    document.getElementById('snav-'+t).className = 'snav-item' + (t===tab?' active':'');
-    document.getElementById('spanel-'+t).className = 'spanel' + (t===tab?' active':'');
+  ['wx','route','layer','boot'].forEach(function(t) {
+    var ni=document.getElementById('snav-'+t);
+    var pi=document.getElementById('spanel-'+t);
+    if(ni) ni.className = 'snav-item' + (t===tab?' active':'');
+    if(pi) pi.className = 'spanel' + (t===tab?' active':'');
   });
+}
+
+// ── BOAT DATA ─────────────────────────────────────────────────────
+function loadBoatData() {
+  try{var s=JSON.parse(localStorage.getItem('boatData'));if(s)Object.assign(boatData,s);}catch(e){}
+  var d=document.getElementById('boatDraft');if(d)d.value=boatData.draft;
+  var ss=document.getElementById('boatSailSpd');if(ss)ss.value=boatData.sailSpd;
+  var ms=document.getElementById('boatMotorSpd');if(ms)ms.value=boatData.motorSpd;
+  var md=document.getElementById('minDepth');if(md)md.value=boatData.minDepth;
+  HULL_SPD=boatData.sailSpd;
+  var lbl=document.getElementById('boatTypeLbl');if(lbl)lbl.textContent=boatData.type==='sail'?'Segelboot':'Motorboot';
+}
+
+function saveBoatData() {
+  boatData.draft=parseFloat(document.getElementById('boatDraft').value)||1.5;
+  boatData.sailSpd=parseFloat(document.getElementById('boatSailSpd').value)||6.5;
+  boatData.motorSpd=parseFloat(document.getElementById('boatMotorSpd').value)||5.0;
+  boatData.minDepth=parseFloat(document.getElementById('minDepth').value)||2.0;
+  HULL_SPD=boatData.sailSpd;
+  localStorage.setItem('boatData',JSON.stringify(boatData));
+  calcRoute();
+  toast('Bootsdaten gespeichert','ok');
+}
+
+function toggleBoatType() {
+  boatData.type=boatData.type==='sail'?'motor':'sail';
+  var lbl=document.getElementById('boatTypeLbl');if(lbl)lbl.textContent=boatData.type==='sail'?'Segelboot':'Motorboot';
+  var row=document.getElementById('mrowBoatType');if(row)row.className='mrow'+(boatData.type==='motor'?' on':'');
+  saveBoatData();
+}
+
+// Simple opening hours check (handles "Mo-Fr 09:00-18:00" style)
+function checkOpen(oh) {
+  try {
+    if(oh==='24/7')return true;
+    var now=new Date();
+    var day=['Su','Mo','Tu','We','Th','Fr','Sa'][now.getDay()];
+    var hhmm=now.getHours()*60+now.getMinutes();
+    // Look for a time range like 09:00-18:00 in the string
+    var m=oh.match(/(\d{2}):(\d{2})-(\d{2}):(\d{2})/);
+    if(!m)return null; // unknown
+    var open=parseInt(m[1])*60+parseInt(m[2]);
+    var close=parseInt(m[3])*60+parseInt(m[4]);
+    return hhmm>=open&&hhmm<close;
+  }catch(e){return null;}
 }
 
 function updateRouteMenuRow() {
@@ -1378,14 +1483,14 @@ function openMobSidebar() {
 function closeMobSidebar() {
   document.getElementById('sidebar').classList.remove('mob-open');
   document.getElementById('mobOverlay').classList.remove('open');
-  ['map','wx','route','track','layer','kai'].forEach(function(t){
+  ['map','wx','route','layer','boot','kai'].forEach(function(t){
     var el=document.getElementById('tab-'+t);
     if(el) el.className='tab-btn'+(t==='map'?' active':'');
   });
 }
 
 function mobTab(tab) {
-  ['map','wx','route','track','layer','kai'].forEach(function(t){
+  ['map','wx','route','layer','boot','kai'].forEach(function(t){
     var el=document.getElementById('tab-'+t);
     if(el) el.className='tab-btn'+(t===tab?' active':'');
   });
@@ -1395,7 +1500,7 @@ function mobTab(tab) {
     closeMobSidebar();
     toggleKai();
   } else {
-    var snavMap={wx:'wx',route:'route',track:'track',layer:'layer'};
+    var snavMap={wx:'wx',route:'route',layer:'layer',boot:'boot'};
     snavTab(snavMap[tab]||tab);
     openMobSidebar();
   }
@@ -1427,6 +1532,7 @@ function syncMobWeather(c, code, b, wh) {
 window.addEventListener('resize',function(){if(layerOn.wind)drawWindArrows();});
 initMap();
 autoLocate();
+loadBoatData();
 // Mark wind layer toggle as active (it's on by default)
 window.addEventListener('load',function(){updateLayerRow('wind');});
 </script>
