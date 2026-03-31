@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>TrackOS</title>
+<title>LuckyStarOnboard Beta 0.5</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -308,30 +308,29 @@ body.day .mob-panel{background:#fff}
 .mob-panel::-webkit-scrollbar-thumb{background:var(--bd)}
 
 @media(max-width:1100px){
-#sidebar{display:none}
+#sidebar{position:fixed;left:0;top:0;bottom:60px;z-index:2000;width:285px;
+  transform:translateX(-285px);transition:transform .28s ease;display:flex;
+  box-shadow:4px 0 24px rgba(0,0,0,.6)}
+#sidebar.mob-open{transform:translateX(0)}
+#mobOverlay{display:none;position:fixed;inset:0 0 60px 0;background:rgba(0,0,0,.45);z-index:1999}
+#mobOverlay.open{display:block}
 #tabBar{display:flex}
 #main{flex-direction:column}
-#mapWrap{flex:1;margin-bottom:56px}
+#mapWrap{flex:1;margin-bottom:60px}
 .hpills{display:none}
 header{padding:8px 12px}
-#kaiPanel{bottom:56px;max-height:50vh}
+#kaiPanel{bottom:60px;max-height:50vh}
 #posBox{top:8px;left:8px}
 .map-ov{top:8px;right:8px}
 }
 @media(min-width:1101px){
 #tabBar{display:none}
-.mob-panel{display:none !important}
-#sidebar{display:flex}
+#mobOverlay{display:none !important}
+#sidebar{display:flex;position:relative;transform:none;box-shadow:none}
 }
-
-/* Force mobile layout class */
-body.mobile #sidebar{display:none !important}
 body.mobile #tabBar{display:flex !important}
-body.mobile #main{flex-direction:column}
-body.mobile #mapWrap{flex:1;margin-bottom:56px}
 body.mobile .hpills{display:none}
-body.mobile #kaiPanel{bottom:56px;max-height:50vh}
-body.mobile .map-ov{top:8px;right:8px}
+body.mobile #kaiPanel{bottom:60px;max-height:50vh}
 
 @keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(0,229,255,.4)}50%{box-shadow:0 0 0 7px rgba(0,229,255,0)}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
@@ -346,7 +345,7 @@ body.mobile .map-ov{top:8px;right:8px}
   <header>
     <div class="logo">
       <div class="logo-ring"><div class="logo-dot"></div></div>
-      <div class="logo-text">TRACK<span>OS</span> <span style="font-size:10px;color:var(--ac4);opacity:.8">2.0</span></div>
+      <div class="logo-text">LUCKY<span>STAR</span> <span style="font-size:10px;color:var(--ac4);opacity:.8">Beta 0.5</span></div>
     </div>
     <div class="hpills">
       <div class="hp" id="hpGps"><span id="hpGpsTxt">GPS OFFLINE</span></div>
@@ -363,109 +362,170 @@ body.mobile .map-ov{top:8px;right:8px}
 
   <div id="main">
 
-```
-<!-- SIDEBAR -->
 <aside id="sidebar">
 
-  <!-- SEGELWETTER -->
-  <div class="ss" id="wxPanel">
-    <div class="sl">Segelwetter</div>
-    <div id="wxLoading" style="font-size:9px;color:var(--dim);text-align:center;padding:8px 0">Warte auf GPS...</div>
-    <div id="wxContent" style="display:none">
-      <div class="wx-tabs">
-        <button class="wx-tab active" onclick="wxTab('now')">AKTUELL</button>
-        <button class="wx-tab" onclick="wxTab('fc')">VORHERSAGE</button>
-        <button class="wx-tab" onclick="wxTab('wind')">WIND</button>
+  <!-- TAB NAVIGATION -->
+  <nav class="snav">
+    <div class="snav-item active" id="snav-wx" onclick="snavTab('wx')">
+      <span class="snav-icon">🌤</span>WETTER
+    </div>
+    <div class="snav-item" id="snav-route" onclick="snavTab('route')">
+      <span class="snav-icon">🧭</span>ROUTE
+    </div>
+    <div class="snav-item" id="snav-track" onclick="snavTab('track')">
+      <span class="snav-icon">📍</span>TRACKING
+    </div>
+    <div class="snav-item" id="snav-layer" onclick="snavTab('layer')">
+      <span class="snav-icon">🗂</span>EBENEN
+    </div>
+  </nav>
+
+  <!-- WETTER PANEL -->
+  <div class="spanel active" id="spanel-wx">
+    <div class="sec">
+      <div class="sec-title">Segelwetter</div>
+      <div id="wxLoading" style="font-size:9px;color:var(--dim);text-align:center;padding:8px 0">Warte auf GPS...</div>
+      <div id="wxContent" style="display:none">
+        <div class="wx-tabs">
+          <button class="wx-tab active" onclick="wxTab('now')">AKTUELL</button>
+          <button class="wx-tab" onclick="wxTab('fc')">VORHERSAGE</button>
+          <button class="wx-tab" onclick="wxTab('wind')">WIND</button>
+        </div>
+        <div id="wxNow">
+          <div class="wx-row">
+            <div id="wxIcon" class="wx-icon">--</div>
+            <div><div class="wx-big"><span id="wxTemp">--</span>°</div>
+            <div style="font-size:9px;color:var(--dim);margin-top:2px" id="wxDesc">--</div></div>
+          </div>
+          <div class="bft-box">
+            <div class="bft-num" id="bftNum">-</div>
+            <div class="bft-label">Beaufort &nbsp;<span id="bftDesc" style="color:var(--tx)">--</span></div>
+          </div>
+          <div class="g3">
+            <div class="wc wind"><div class="wc-l">Wind</div><div class="wc-v"><span id="wxWind">--</span> km/h</div></div>
+            <div class="wc gust"><div class="wc-l">Böen</div><div class="wc-v"><span id="wxGust">--</span> km/h</div></div>
+            <div class="wc rain"><div class="wc-l">Regen</div><div class="wc-v"><span id="wxRain">--</span> mm</div></div>
+            <div class="wc"><div class="wc-l">Richtung</div><div class="wc-v" id="wxWdir">--</div></div>
+            <div class="wc"><div class="wc-l">Luftdruck</div><div class="wc-v"><span id="wxPress">--</span></div></div>
+            <div class="wc"><div class="wc-l">Sicht</div><div class="wc-v" id="wxVis">--</div></div>
+          </div>
+          <div class="g2" style="margin-top:5px">
+            <div class="wc"><div class="wc-l">Wellenhöhe</div><div class="wc-v" id="wxWave">--</div></div>
+            <div class="wc"><div class="wc-l">Segelempfehlung</div><div class="wc-v" id="wxTip" style="font-size:10px;color:var(--ac3)">--</div></div>
+          </div>
+        </div>
+        <div id="wxFc" style="display:none"><div id="fcList"></div></div>
+        <div id="wxWind" style="display:none">
+          <div style="text-align:center;padding:10px 0 6px">
+            <div style="font-size:44px;transition:transform .5s" id="windCompass">↑</div>
+            <div style="font-size:9px;color:var(--dim)" id="windDirTxt">--</div>
+          </div>
+          <div class="g2">
+            <div class="wc"><div class="wc-l">Geschw.</div><div class="wc-v" id="w2Spd">--</div></div>
+            <div class="wc"><div class="wc-l">Böen</div><div class="wc-v" id="w2Gst" style="color:var(--ac4)">--</div></div>
+            <div class="wc"><div class="wc-l">Beaufort</div><div class="wc-v" id="w2Bft">--</div></div>
+            <div class="wc"><div class="wc-l">Grad</div><div class="wc-v" id="w2Deg">--</div></div>
+          </div>
+        </div>
       </div>
-      <div id="wxNow">
-        <div class="wx-row">
-          <div id="wxIcon" class="wx-icon">--</div>
-          <div><div class="wx-big"><span id="wxTemp">--</span>°</div>
-          <div style="font-size:9px;color:var(--dim);margin-top:2px" id="wxDesc">--</div></div>
-        </div>
-        <div class="bft-box">
-          <div class="bft-num" id="bftNum">-</div>
-          <div class="bft-label">Beaufort &nbsp;<span id="bftDesc" style="color:var(--tx)">--</span></div>
-        </div>
-        <div class="g3">
-          <div class="wc wind"><div class="wc-l">Wind</div><div class="wc-v"><span id="wxWind">--</span> km/h</div></div>
-          <div class="wc gust"><div class="wc-l">Boeen</div><div class="wc-v"><span id="wxGust">--</span> km/h</div></div>
-          <div class="wc rain"><div class="wc-l">Regen</div><div class="wc-v"><span id="wxRain">--</span> mm</div></div>
-          <div class="wc"><div class="wc-l">Richtung</div><div class="wc-v" id="wxWdir">--</div></div>
-          <div class="wc"><div class="wc-l">Luftdruck</div><div class="wc-v"><span id="wxPress">--</span></div></div>
-          <div class="wc"><div class="wc-l">Sicht</div><div class="wc-v" id="wxVis">--</div></div>
-        </div>
-        <div class="g2" style="margin-top:5px">
-          <div class="wc"><div class="wc-l">Wellenhoehe</div><div class="wc-v" id="wxWave">--</div></div>
-          <div class="wc"><div class="wc-l">Segelempfehlung</div><div class="wc-v" id="wxTip" style="font-size:10px;color:var(--ac3)">--</div></div>
-        </div>
+    </div>
+  </div>
+
+  <!-- ROUTE PANEL -->
+  <div class="spanel" id="spanel-route">
+    <div class="sec">
+      <div class="sec-title">Routenplaner</div>
+      <!-- Route on/off as a menu row with toggle switch -->
+      <div class="mrow" id="mrowRoute" onclick="toggleRouteMode();updateRouteMenuRow()">
+        <div class="mrow-label"><span class="mrow-icon">🧭</span>Route planen</div>
+        <div class="tog-sw" id="routeTogSw"></div>
       </div>
-      <div id="wxFc" style="display:none"><div id="fcList"></div></div>
-      <div id="wxWind" style="display:none">
-        <div style="text-align:center;padding:10px 0 6px">
-          <div style="font-size:44px;transition:transform .5s" id="windCompass">&#8593;</div>
-          <div style="font-size:9px;color:var(--dim)" id="windDirTxt">--</div>
-        </div>
-        <div class="g2">
-          <div class="wc"><div class="wc-l">Geschw.</div><div class="wc-v" id="w2Spd">--</div></div>
-          <div class="wc"><div class="wc-l">Boeen</div><div class="wc-v" id="w2Gst" style="color:var(--ac4)">--</div></div>
-          <div class="wc"><div class="wc-l">Beaufort</div><div class="wc-v" id="w2Bft">--</div></div>
-          <div class="wc"><div class="wc-l">Grad</div><div class="wc-v" id="w2Deg">--</div></div>
-        </div>
+      <div class="mrow" onclick="clearRoute()">
+        <div class="mrow-label"><span class="mrow-icon">🔄</span>Route leeren</div>
+        <div class="mrow-val">Alle WP löschen</div>
       </div>
     </div>
-  </div>
 
-  <!-- GPS TRACKING -->
-  <div class="ss">
-    <div class="sl">GPS Tracking</div>
-    <div class="stats">
-      <div class="stat ca"><div class="stat-l">Geschw.</div><div class="stat-v" id="vSpd">--<small>km/h</small></div></div>
-      <div class="stat"><div class="stat-l">Hoehe</div><div class="stat-v" id="vAlt">--<small>m</small></div></div>
-      <div class="stat cg"><div class="stat-l">Distanz</div><div class="stat-v" id="vDist">0<small>m</small></div></div>
-      <div class="stat cr"><div class="stat-l">Punkte</div><div class="stat-v" id="vPts">0</div></div>
+    <!-- Instruction shown when active -->
+    <div class="route-cta" id="routeCta">
+      ✦ Route planen ist AN<br>
+      Tippe auf die Karte<br>um Wegpunkte zu setzen
     </div>
-    <div id="graphWrap"><canvas id="speedCanvas"></canvas></div>
-  </div>
 
-  <!-- CONTROLS -->
-  <div class="btn-row">
-    <button class="btn primary" id="btnStart" onclick="startTracking()">&#9654; START</button>
-    <button class="btn danger" id="btnStop" onclick="stopTracking()" disabled>&#9632; STOP</button>
-  </div>
+    <!-- Route summary (only shown when waypoints exist) -->
+    <div class="sec" id="routeSum" style="display:none">
+      <div class="sec-title">Übersicht</div>
+      <div class="rs-grid">
+        <div class="rsc"><div class="rsc-l">Luftlinie</div><div class="rsc-v" id="rsDist">--</div></div>
+        <div class="rsc"><div class="rsc-l">Gesegelt</div><div class="rsc-v" id="rsSailed" style="color:var(--ac4)">--</div></div>
+        <div class="rsc"><div class="rsc-l">Reisezeit</div><div class="rsc-v" id="rsTime">--</div></div>
+        <div class="rsc"><div class="rsc-l">Ø VMG</div><div class="rsc-v" id="rsWind">--</div></div>
+        <div class="rsc"><div class="rsc-l">Wegpunkte</div><div class="rsc-v" id="rsWP">0</div></div>
+        <div class="rsc"><div class="rsc-l">Kreuzungen</div><div class="rsc-v" id="rsTacks" style="color:var(--ac2)">0</div></div>
+      </div>
+    </div>
 
-  <!-- LAYER TOGGLES -->
-  <div class="ss">
-    <div class="sl">Kartenebenen</div>
-    <div class="layer-grid">
-      <button class="btn tog" id="togSea" onclick="togLayer('sea')">&#9875; Seekarte</button>
-      <button class="btn tog" id="togWind" onclick="togLayer('wind')">&#127788; Wind</button>
-      <button class="btn tog" id="togHarbour" onclick="togLayer('harbour')">&#9875; Haefen</button>
-      <button class="btn tog" id="togLock" onclick="togLayer('lock')">&#9783; Schleusen</button>
-      <button class="btn tog" id="togBridge" onclick="togLayer('bridge')">&#9136; Bruecken</button>
-      <button class="btn tog" id="togShop" onclick="togLayer('shop')">&#128722; Versorgung</button>
+    <div class="wp-scroll" id="wpList">
+      <div class="empty">Route planen aktivieren,<br>dann Karte antippen.</div>
     </div>
   </div>
 
-  <!-- ROUTE PLANNER -->
-  <div class="btn-row">
-    <button class="btn tog" id="btnRoute" onclick="toggleRouteMode()">&#9973; ROUTENPLANER</button>
-    <button class="btn danger" onclick="clearRoute()">&#8635; LEEREN</button>
-  </div>
-  <div class="ss" id="routeSum" style="display:none">
-    <div class="sl">Routenuebersicht</div>
-    <div class="rs-grid">
-      <div class="rsc"><div class="rsc-l">Luftlinie</div><div class="rsc-v" id="rsDist">--</div></div>
-      <div class="rsc"><div class="rsc-l">Gesegelt</div><div class="rsc-v" id="rsSailed" style="color:var(--ac4)">--</div></div>
-      <div class="rsc"><div class="rsc-l">Reisezeit</div><div class="rsc-v" id="rsTime">--</div></div>
-      <div class="rsc"><div class="rsc-l">Ø VMG</div><div class="rsc-v" id="rsWind">--</div></div>
-      <div class="rsc"><div class="rsc-l">Wegpunkte</div><div class="rsc-v" id="rsWP">0</div></div>
-      <div class="rsc"><div class="rsc-l">Kreuzungen</div><div class="rsc-v" id="rsTacks" style="color:var(--ac2)">0</div></div>
+  <!-- TRACKING PANEL -->
+  <div class="spanel" id="spanel-track">
+    <div class="sec">
+      <div class="sec-title">GPS Tracking</div>
+      <div class="stats">
+        <div class="stat ca"><div class="stat-l">Geschw.</div><div class="stat-v" id="vSpd">--<small>km/h</small></div></div>
+        <div class="stat"><div class="stat-l">Höhe</div><div class="stat-v" id="vAlt">--<small>m</small></div></div>
+        <div class="stat cg"><div class="stat-l">Distanz</div><div class="stat-v" id="vDist">0<small>m</small></div></div>
+        <div class="stat cr"><div class="stat-l">Punkte</div><div class="stat-v" id="vPts">0</div></div>
+      </div>
+      <div id="graphWrap"><canvas id="speedCanvas"></canvas></div>
+    </div>
+    <div class="track-row">
+      <button class="track-btn start" id="btnStart" onclick="startTracking()">▶ START</button>
+      <button class="track-btn stop" id="btnStop" onclick="stopTracking()" disabled>■ STOP</button>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Anzeige</div>
+      <div class="mrow" onclick="toggleDay()">
+        <div class="mrow-label"><span class="mrow-icon">🌙</span>Tag / Nacht</div>
+        <div class="mrow-val" id="dayModeLbl">Nacht</div>
+      </div>
     </div>
   </div>
-  <div class="wp-scroll" id="wpList">
-    <div class="empty">Routenplaner aktivieren<br>dann Karte antippen.</div>
+
+  <!-- EBENEN PANEL -->
+  <div class="spanel" id="spanel-layer">
+    <div class="sec">
+      <div class="sec-title">Kartenebenen</div>
+      <div class="mrow" id="mrowSea" onclick="togLayer('sea');updateLayerRow('sea')">
+        <div class="mrow-label"><span class="mrow-icon">⛵</span>Seekarte</div>
+        <div class="tog-sw" id="swSea"></div>
+      </div>
+      <div class="mrow" id="mrowWind" onclick="togLayer('wind');updateLayerRow('wind')">
+        <div class="mrow-label"><span class="mrow-icon">🌬</span>Wind</div>
+        <div class="tog-sw" id="swWind"></div>
+      </div>
+      <div class="mrow" id="mrowHarbour" onclick="togLayer('harbour');updateLayerRow('harbour')">
+        <div class="mrow-label"><span class="mrow-icon">⚓</span>Häfen</div>
+        <div class="tog-sw" id="swHarbour"></div>
+      </div>
+      <div class="mrow" id="mrowLock" onclick="togLayer('lock');updateLayerRow('lock')">
+        <div class="mrow-label"><span class="mrow-icon">🔒</span>Schleusen</div>
+        <div class="tog-sw" id="swLock"></div>
+      </div>
+      <div class="mrow" id="mrowBridge" onclick="togLayer('bridge');updateLayerRow('bridge')">
+        <div class="mrow-label"><span class="mrow-icon">🌉</span>Brücken</div>
+        <div class="tog-sw" id="swBridge"></div>
+      </div>
+      <div class="mrow" id="mrowShop" onclick="togLayer('shop');updateLayerRow('shop')">
+        <div class="mrow-label"><span class="mrow-icon">🛒</span>Versorgung</div>
+        <div class="tog-sw" id="swShop"></div>
+      </div>
+    </div>
   </div>
+
 </aside>
 
 <!-- MAP -->
@@ -521,6 +581,8 @@ body.mobile .map-ov{top:8px;right:8px}
 
   <!-- MOBILE BOTTOM TAB BAR -->
 
+  <div id="mobOverlay" onclick="closeMobSidebar()"></div>
+
   <div id="tabBar">
     <div class="tab-btns">
       <button class="tab-btn active" id="tab-map" onclick="mobTab('map')">
@@ -532,93 +594,15 @@ body.mobile .map-ov{top:8px;right:8px}
       <button class="tab-btn" id="tab-route" onclick="mobTab('route')">
         <span class="tab-btn-icon">&#9973;</span>ROUTE
       </button>
+      <button class="tab-btn" id="tab-track" onclick="mobTab('track')">
+        <span class="tab-btn-icon">&#128205;</span>TRACKING
+      </button>
       <button class="tab-btn" id="tab-layer" onclick="mobTab('layer')">
         <span class="tab-btn-icon">&#9870;</span>EBENEN
       </button>
       <button class="tab-btn" id="tab-kai" onclick="mobTab('kai')">
         <span class="tab-btn-icon">&#129302;</span>KAI
       </button>
-    </div>
-  </div>
-
-  <!-- MOBILE PANELS -->
-
-  <!-- WETTER PANEL -->
-
-  <div class="mob-panel" id="mobWx">
-    <div style="padding:14px">
-      <div class="sl">Segelwetter</div>
-      <div id="mobWxLoading" style="font-size:10px;color:var(--dim);text-align:center;padding:12px">Warte auf GPS...</div>
-      <div id="mobWxContent" style="display:none">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div id="mobWxIcon" style="font-size:36px">--</div>
-          <div>
-            <div style="font-family:var(--sans);font-size:28px;font-weight:800;color:#fff"><span id="mobWxTemp">--</span>°C</div>
-            <div style="font-size:10px;color:var(--dim)" id="mobWxDesc">--</div>
-          </div>
-          <div style="margin-left:auto;text-align:center">
-            <div class="bft-num" id="mobBftNum" style="font-size:32px">-</div>
-            <div style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em">Beaufort</div>
-          </div>
-        </div>
-        <div class="g3" style="margin-bottom:8px">
-          <div class="wc wind"><div class="wc-l">Wind</div><div class="wc-v"><span id="mobWxWind">--</span> km/h</div></div>
-          <div class="wc gust"><div class="wc-l">Boeen</div><div class="wc-v"><span id="mobWxGust">--</span> km/h</div></div>
-          <div class="wc"><div class="wc-l">Richtung</div><div class="wc-v" id="mobWxWdir">--</div></div>
-          <div class="wc rain"><div class="wc-l">Regen</div><div class="wc-v"><span id="mobWxRain">--</span> mm</div></div>
-          <div class="wc"><div class="wc-l">Luftdruck</div><div class="wc-v"><span id="mobWxPress">--</span></div></div>
-          <div class="wc"><div class="wc-l">Wellenhoehe</div><div class="wc-v" id="mobWxWave">--</div></div>
-        </div>
-        <div class="wc" style="margin-bottom:6px">
-          <div class="wc-l">Segelempfehlung</div>
-          <div class="wc-v" id="mobWxTip" style="color:var(--ac3);font-size:11px">--</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ROUTE PANEL -->
-
-  <div class="mob-panel" id="mobRoute">
-    <div style="padding:14px">
-      <div class="sl">Routenplaner</div>
-      <div class="btn-row" style="padding:0 0 10px 0;border:none">
-        <button class="btn tog" id="mobBtnRoute" onclick="toggleRouteMode();updateMobRouteBtn()">&#9973; ROUTENPLANER AN/AUS</button>
-        <button class="btn danger" onclick="clearRoute()">&#8635;</button>
-      </div>
-      <div id="mobRouteSum" style="display:none;margin-bottom:10px">
-        <div class="rs-grid">
-          <div class="rsc"><div class="rsc-l">Distanz</div><div class="rsc-v" id="mobRsDist">--</div></div>
-          <div class="rsc"><div class="rsc-l">Reisezeit</div><div class="rsc-v" id="mobRsTime">--</div></div>
-        </div>
-      </div>
-      <div id="mobWpList"><div class="empty" style="padding:12px">Routenplaner aktivieren,<br>dann Karte antippen.</div></div>
-    </div>
-  </div>
-
-  <!-- LAYER PANEL -->
-
-  <div class="mob-panel" id="mobLayer">
-    <div style="padding:14px">
-      <div class="sl">Kartenebenen</div>
-      <div class="layer-grid" style="margin-bottom:10px">
-        <button class="btn tog" id="mobTogSea" onclick="togLayer('sea');syncMobToggle('sea')">&#9875; Seekarte</button>
-        <button class="btn tog" id="mobTogWind" onclick="togLayer('wind');syncMobToggle('wind')">&#127788; Wind</button>
-        <button class="btn tog" id="mobTogHarbour" onclick="togLayer('harbour');syncMobToggle('harbour')">&#9875; Haefen</button>
-        <button class="btn tog" id="mobTogLock" onclick="togLayer('lock');syncMobToggle('lock')">&#9783; Schleusen</button>
-        <button class="btn tog" id="mobTogBridge" onclick="togLayer('bridge');syncMobToggle('bridge')">&#9136; Bruecken</button>
-        <button class="btn tog" id="mobTogShop" onclick="togLayer('shop');syncMobToggle('shop')">&#128722; Versorgung</button>
-      </div>
-      <div class="sl">GPS Tracking</div>
-      <div class="stats" style="margin-bottom:8px">
-        <div class="stat ca"><div class="stat-l">Geschw.</div><div class="stat-v" id="mobVSpd">--<small>km/h</small></div></div>
-        <div class="stat cg"><div class="stat-l">Distanz</div><div class="stat-v" id="mobVDist">0<small>m</small></div></div>
-      </div>
-      <div class="btn-row" style="padding:0;border:none">
-        <button class="btn primary" id="mobBtnStart" onclick="startTracking()">&#9654; START</button>
-        <button class="btn danger" id="mobBtnStop" onclick="stopTracking()" disabled>&#9632; STOP</button>
-        <button class="btn" onclick="toggleDay()">&#9790; TAG/NACHT</button>
-      </div>
     </div>
   </div>
 </div>
@@ -817,8 +801,6 @@ function initMap(){
 // ── LAYER TOGGLES ─────────────────────────────────────────────────
 function togLayer(name){
   layerOn[name]=!layerOn[name];
-  var btn=document.getElementById('tog'+name.charAt(0).toUpperCase()+name.slice(1));
-  btn.className='btn tog'+(layerOn[name]?' on':'');
   if(name==='sea'){
     if(layerOn.sea)seaLayer.addTo(map);else if(map.hasLayer(seaLayer))map.removeLayer(seaLayer);return;
   }
@@ -941,11 +923,10 @@ function showErr(msg,code){document.getElementById('errMsg').textContent=msg;doc
 // ── ROUTE PLANNER ─────────────────────────────────────────────────
 function toggleRouteMode(){
   routeMode=!routeMode;
-  var btn=document.getElementById('btnRoute');
-  btn.className='btn'+(routeMode?' route-on':' tog');
   document.getElementById('addInstr').style.display=routeMode?'block':'none';
   document.getElementById('routeSum').style.display=routeMode&&waypoints.length?'block':'none';
   document.getElementById('map').style.cursor=routeMode?'crosshair':'';
+  updateRouteMenuRow();
 }
 
 function onMapClick(e){
@@ -1196,6 +1177,28 @@ function toggleDay(){
   dayMode=!dayMode;
   document.body.classList.toggle('day',dayMode);
   document.getElementById('btnDay').innerHTML=dayMode?'&#9728;':'&#9790;';
+  var lbl=document.getElementById('dayModeLbl');
+  if(lbl) lbl.textContent=dayMode?'Tag':'Nacht';
+}
+
+// ── SIDEBAR NAV ───────────────────────────────────────────────────
+function snavTab(tab) {
+  ['wx','route','track','layer'].forEach(function(t) {
+    document.getElementById('snav-'+t).className = 'snav-item' + (t===tab?' active':'');
+    document.getElementById('spanel-'+t).className = 'spanel' + (t===tab?' active':'');
+  });
+}
+
+function updateRouteMenuRow() {
+  var row = document.getElementById('mrowRoute');
+  var cta = document.getElementById('routeCta');
+  if(row) row.className = 'mrow' + (routeMode?' on':'');
+  if(cta) cta.className = 'route-cta' + (routeMode?' active':'');
+}
+
+function updateLayerRow(name) {
+  var row = document.getElementById('mrow'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(row) row.className = 'mrow' + (layerOn[name]?' on':'');
 }
 
 // ── UI HELPERS ────────────────────────────────────────────────────
@@ -1350,68 +1353,41 @@ function speak(text){
   }
 })();
 
-// ── MOBILE TABS ───────────────────────────────────────────────────
-var currentMobTab = 'map';
+// ── MOBILE SIDEBAR ────────────────────────────────────────────────
+function openMobSidebar() {
+  document.getElementById('sidebar').classList.add('mob-open');
+  document.getElementById('mobOverlay').classList.add('open');
+}
+function closeMobSidebar() {
+  document.getElementById('sidebar').classList.remove('mob-open');
+  document.getElementById('mobOverlay').classList.remove('open');
+  ['map','wx','route','track','layer','kai'].forEach(function(t){
+    var el=document.getElementById('tab-'+t);
+    if(el) el.className='tab-btn'+(t==='map'?' active':'');
+  });
+}
+
 function mobTab(tab) {
-  // Close all panels
-  ['mobWx','mobRoute','mobLayer'].forEach(function(id){
-    document.getElementById(id).classList.remove('open');
+  ['map','wx','route','track','layer','kai'].forEach(function(t){
+    var el=document.getElementById('tab-'+t);
+    if(el) el.className='tab-btn'+(t===tab?' active':'');
   });
-  // Update tab buttons
-  ['map','wx','route','layer','kai'].forEach(function(t){
-    var el = document.getElementById('tab-'+t);
-    if(el) el.className = 'tab-btn' + (t===tab?' active':'');
-  });
-  currentMobTab = tab;
-  if(tab === 'wx') document.getElementById('mobWx').classList.add('open');
-  else if(tab === 'route') document.getElementById('mobRoute').classList.add('open');
-  else if(tab === 'layer') document.getElementById('mobLayer').classList.add('open');
-  else if(tab === 'kai') {
-    document.getElementById('tab-kai').className = 'tab-btn active';
+  if(tab==='map') {
+    closeMobSidebar();
+  } else if(tab==='kai') {
+    closeMobSidebar();
     toggleKai();
+  } else {
+    var snavMap={wx:'wx',route:'route',track:'track',layer:'layer'};
+    snavTab(snavMap[tab]||tab);
+    openMobSidebar();
   }
 }
 
-function syncMobToggle(name) {
-  var id = 'mobTog'+name.charAt(0).toUpperCase()+name.slice(1);
-  var el = document.getElementById(id);
-  if(el) el.className = 'btn tog' + (layerOn[name]?' on':'');
-}
-
-function updateMobRouteBtn() {
-  var el = document.getElementById('mobBtnRoute');
-  if(el) el.className = 'btn tog' + (routeMode?' route-on':'');
-}
-
-// Sync mobile stats with GPS
-function syncMobStats() {
-  var spd = document.getElementById('vSpd');
-  var dist = document.getElementById('vDist');
-  var mobSpd = document.getElementById('mobVSpd');
-  var mobDist = document.getElementById('mobVDist');
-  if(spd && mobSpd) mobSpd.innerHTML = spd.innerHTML;
-  if(dist && mobDist) mobDist.innerHTML = dist.innerHTML;
-  // Sync tracking buttons
-  var mobStart = document.getElementById('mobBtnStart');
-  var mobStop = document.getElementById('mobBtnStop');
-  var mainStart = document.getElementById('btnStart');
-  var mainStop = document.getElementById('btnStop');
-  if(mobStart && mainStart) mobStart.disabled = mainStart.disabled;
-  if(mobStop && mainStop) mobStop.disabled = mainStop.disabled;
-  // Sync route summary
-  var mobRouteSum = document.getElementById('mobRouteSum');
-  if(mobRouteSum) mobRouteSum.style.display = waypoints.length>1 ? 'block' : 'none';
-  var mobRsDist = document.getElementById('mobRsDist');
-  var mobRsTime = document.getElementById('mobRsTime');
-  if(mobRsDist) mobRsDist.textContent = document.getElementById('rsDist').textContent;
-  if(mobRsTime) mobRsTime.textContent = document.getElementById('rsTime').textContent;
-  // Sync wp list
-  var mobWpList = document.getElementById('mobWpList');
-  var mainWpList = document.getElementById('wpList');
-  if(mobWpList && mainWpList) mobWpList.innerHTML = mainWpList.innerHTML;
-}
-
-// Sync weather to mobile panel
+// legacy stubs (called from old HTML that no longer exists, kept to avoid errors)
+function syncMobToggle(){}
+function updateMobRouteBtn(){}
+function syncMobStats(){}
 function syncMobWeather(c, code, b, wh) {
   var el = function(id){ return document.getElementById(id); };
   var tips=['Spinnaker!','Alle Segel','Ideale Bedingungen','Gut segeln','Ggf. 1. Reff','1. Reff','2. Reff + Sturmfock','Hafen anlaufen!','Hafen anlaufen!','Hafen anlaufen!','NICHT FAHREN','NICHT FAHREN','NICHT FAHREN'];
@@ -1432,7 +1408,6 @@ function syncMobWeather(c, code, b, wh) {
 
 // Init
 window.addEventListener('resize',function(){if(layerOn.wind)drawWindArrows();});
-setInterval(syncMobStats, 1000);
 initMap();
 </script>
 
