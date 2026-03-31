@@ -629,7 +629,7 @@ var watchId=null, tracking=false;
 var track=[], polyline, myMarker;
 var saved=[], speedHist=[], toastT;
 var poiLayers={harbour:null,lock:null,bridge:null,shop:null};
-var layerOn={sea:false,wind:false,harbour:false,lock:false,bridge:false,shop:false};
+var layerOn={sea:false,wind:true,harbour:false,lock:false,bridge:false,shop:false};
 var routeMode=false, waypoints=[], routeLines=[], wpMarkers=[];
 var lastLat=null, lastLon=null;
 var kaiMessages=[], speakOn=false;
@@ -751,7 +751,7 @@ function fetchWindGrid(){
   fetch(url).then(function(r){return r.json();}).then(function(data){
     var arr=Array.isArray(data)?data:[data];
     windGridData=arr.filter(function(d){return d.current;}).map(function(d){return{lat:d.latitude,lon:d.longitude,speed:d.current.wind_speed_10m,dir:d.current.wind_direction_10m};});
-    if(layerOn.wind)drawWindArrows();
+    drawWindArrows(); // always redraw when data arrives
     calcRoute();
   }).catch(function(){});
 }
@@ -805,7 +805,7 @@ function togLayer(name){
     if(layerOn.sea)seaLayer.addTo(map);else if(map.hasLayer(seaLayer))map.removeLayer(seaLayer);return;
   }
   if(name==='wind'){
-    if(layerOn.wind){fetchWindGrid();drawWindArrows();}
+    if(layerOn.wind){if(windGridData)drawWindArrows();else fetchWindGrid();}
     else{var c=document.getElementById('windCanvas');c.getContext('2d').clearRect(0,0,c.width,c.height);}
     return;
   }
@@ -1169,7 +1169,24 @@ function drawGraph(){
 
 function locateMe(){
   if(!navigator.geolocation){toast('GPS nicht verfuegbar','err');return;}
-  navigator.geolocation.getCurrentPosition(function(p){map.setView([p.coords.latitude,p.coords.longitude],12);toast('Position gefunden','ok');},function(){toast('GPS Fehler','err');});
+  navigator.geolocation.getCurrentPosition(function(p){
+    onPos(p);
+    toast('Position gefunden','ok');
+  },function(e){
+    var msgs={1:'GPS-Zugriff verweigert – Einstellungen prüfen.',2:'Position nicht ermittelbar.',3:'GPS-Timeout.'};
+    toast(msgs[e.code]||'GPS Fehler','err');
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:10000});
+}
+
+// Silently get position on load for weather + initial map center
+function autoLocate(){
+  if(!navigator.geolocation)return;
+  setPill('hpGps','warn','GPS SUCHE...');
+  navigator.geolocation.getCurrentPosition(function(p){
+    onPos(p);
+  },function(){
+    setPill('hpGps','','GPS OFFLINE');
+  },{enableHighAccuracy:false,timeout:12000,maximumAge:30000});
 }
 
 // ── DAY/NIGHT ─────────────────────────────────────────────────────
@@ -1409,6 +1426,9 @@ function syncMobWeather(c, code, b, wh) {
 // Init
 window.addEventListener('resize',function(){if(layerOn.wind)drawWindArrows();});
 initMap();
+autoLocate();
+// Mark wind layer toggle as active (it's on by default)
+window.addEventListener('load',function(){updateLayerRow('wind');});
 </script>
 
 </body>
