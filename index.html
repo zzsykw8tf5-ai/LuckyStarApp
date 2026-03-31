@@ -400,10 +400,12 @@ body.mobile .map-ov{top:8px;right:8px}
   <div class="ss" id="routeSum" style="display:none">
     <div class="sl">Routenuebersicht</div>
     <div class="rs-grid">
-      <div class="rsc"><div class="rsc-l">Distanz</div><div class="rsc-v" id="rsDist">--</div></div>
+      <div class="rsc"><div class="rsc-l">Luftlinie</div><div class="rsc-v" id="rsDist">--</div></div>
+      <div class="rsc"><div class="rsc-l">Gesegelt</div><div class="rsc-v" id="rsSailed" style="color:var(--ac4)">--</div></div>
       <div class="rsc"><div class="rsc-l">Reisezeit</div><div class="rsc-v" id="rsTime">--</div></div>
+      <div class="rsc"><div class="rsc-l">Ø VMG</div><div class="rsc-v" id="rsWind">--</div></div>
       <div class="rsc"><div class="rsc-l">Wegpunkte</div><div class="rsc-v" id="rsWP">0</div></div>
-      <div class="rsc"><div class="rsc-l">Ø Wind</div><div class="rsc-v" id="rsWind">--</div></div>
+      <div class="rsc"><div class="rsc-l">Kreuzungen</div><div class="rsc-v" id="rsTacks" style="color:var(--ac2)">0</div></div>
     </div>
   </div>
   <div class="wp-scroll" id="wpList">
@@ -925,56 +927,149 @@ function addWP(lat,lon){
   toast('WP '+waypoints.length,'ok');
 }
 
+var MODE_LABELS = { tack:'⚡KREUZEN', close:'↗ AM WIND', reach:'→ HALBWIND', broad:'↘ RAUMSCHOTS', run:'↓ VOR DEM WIND' };
+var MODE_COLS   = { tack:'#ff3d71', close:'#ffd600', reach:'#aaff00', broad:'#00e5ff', run:'#c77dff' };
+
 function drawRouteLines(){
   routeLines.forEach(function(l){map.removeLayer(l);});routeLines=[];
   if(waypoints.length<2)return;
   for(var i=0;i<waypoints.length-1;i++){
-    var a=waypoints[i],b2=waypoints[i+1];
-    var w=getWindAt((a.lat+b2.lat)/2,(a.lon+b2.lon)/2);
-    var brg=bearing([a.lat,a.lon],[b2.lat,b2.lon]);
-    var wa=Math.abs(brg-w.dir);if(wa>180)wa=360-wa;
-    var col=wa<60?'#ff3d71':wa<120?'#ffd600':'#aaff00';
-    var line=L.polyline([[a.lat,a.lon],[b2.lat,b2.lon]],{color:col,weight:3,opacity:.9,dashArray:'8,4'}).addTo(map);
-    var ml=(a.lat+b2.lat)/2,mlo=(a.lon+b2.lon)/2;
-    L.marker([ml,mlo],{icon:L.divIcon({html:'<div style="background:rgba(7,9,13,.88);border:1px solid #1c2830;border-radius:4px;padding:2px 5px;font-size:8px;color:#b8ccd8;font-family:monospace;white-space:nowrap">'+Math.round(brg)+'deg &middot; '+wa.toFixed(0)+'deg Wind</div>',className:'',iconAnchor:[0,0]})}).addTo(map);
-    routeLines.push(line);
+    var a=waypoints[i], b=waypoints[i+1];
+    var leg=legCalc(a,b);
+    var col=MODE_COLS[leg.mode]||'#fff';
+
+    if(leg.mode==='tack'){
+      // Zickzack visualisieren: 3 Schläge durch die Etappe
+      var pts=tackZigzag([a.lat,a.lon],[b.lat,b.lon],leg.wind.dir,leg.tackAngle);
+      var line=L.polyline(pts,{color:col,weight:2.5,opacity:.85,dashArray:'6,3'}).addTo(map);
+      routeLines.push(line);
+    } else {
+      var line=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:col,weight:3,opacity:.9,dashArray:'9,4'}).addTo(map);
+      routeLines.push(line);
+    }
+    // Mitte-Label
+    var ml=(a.lat+b.lat)/2, mlo=(a.lon+b.lon)/2;
+    var extraInfo = leg.mode==='tack'
+      ? leg.tackAngle.toFixed(0)+'° · VMG '+leg.effSpd.toFixed(1)+'kn · +'+((leg.sailedNm-leg.distNm)).toFixed(1)+'nm'
+      : leg.effSpd.toFixed(1)+' kn · '+leg.twa.toFixed(0)+'° TWA';
+    var labelHtml='<div style="background:rgba(7,9,13,.9);border:1px solid '+col+';border-radius:4px;padding:2px 6px;font-size:8px;color:'+col+';font-family:monospace;white-space:nowrap">'
+      +MODE_LABELS[leg.mode]+' &middot; '+extraInfo+'</div>';
+    var lm=L.marker([ml,mlo],{icon:L.divIcon({html:labelHtml,className:'',iconAnchor:[0,0]})}).addTo(map);
+    routeLines.push(lm);
   }
 }
 
-function polarSpeed(wa,max,wspd){
-  var a=Math.abs(wa);if(a>180)a=360-a;
-  if(a<30)return 0;
-  if(a<90)return max*Math.sin((a-30)*Math.PI/120)*Math.min(1,wspd/15);
-  if(a<=110)return max*Math.min(1,wspd/12);
-  if(a<=150)return max*0.85*Math.min(1,wspd/12);
-  return max*0.65*Math.min(1,wspd/12);
+// Erzeugt Zickzack-Punkte für eine Kreuzetappe
+function tackZigzag(from, to, windDir, tackAngle){
+  var pts=[from];
+  var dLat=to[0]-from[0], dLon=to[1]-from[1];
+  // 4 Schläge (gerade Anzahl = gerader Abschluss am Ziel)
+  var n=4;
+  for(var i=1;i<n;i++){
+    var t=i/n;
+    var mid=[from[0]+dLat*t, from[1]+dLon*t];
+    // Versatz senkrecht zur Route, alternierend
+    var perpLat=-dLon*0.18, perpLon=dLat*0.18;
+    var side=(i%2===0?1:-1);
+    pts.push([mid[0]+perpLat*side, mid[1]+perpLon*side]);
+  }
+  pts.push(to);
+  return pts;
+}
+
+// ── SAILING PHYSICS ───────────────────────────────────────────────
+var HULL_SPD = 6.5; // kn, typisches 35ft Kreuzfahrtschiff
+
+// Polardiagramm: Bootsgeschwindigkeit in Knoten je nach TWA und Windstärke
+function polarSpeedKn(twa, windKn) {
+  var a = Math.abs(twa); if(a > 180) a = 360 - a;
+  // Windgeschwindigkeitsfaktor (zu wenig Wind = langsam, zu viel = Reff)
+  var wf = windKn < 4  ? windKn / 4 * 0.4 :
+           windKn < 12 ? 0.4 + (windKn - 4) / 8 * 0.6 :
+           windKn < 20 ? 1.0 :
+           Math.max(0.5, 1.0 - (windKn - 20) * 0.03); // Sturmreff
+  // Polarkurve (% von Rumpfgeschwindigkeit je TWA)
+  var polar = a < 40  ? 0    :  // Nogo-Zone
+              a < 50  ? 0.60 :  // Am Wind (knapp)
+              a < 65  ? 0.72 :  // Am Wind
+              a < 80  ? 0.85 :  // Halbwindkurs
+              a < 100 ? 1.00 :  // Raumschotskurs (schnellster Kurs)
+              a < 130 ? 0.92 :  // Raumschots
+              a < 160 ? 0.82 :  // Backstag
+              0.68;              // Vor dem Wind
+  return HULL_SPD * polar * wf;
+}
+
+// VMG (Velocity Made Good) = Komponente der Bootsgeschwindigkeit in Zielrichtung
+function calcVMG(twa, windKn) {
+  return polarSpeedKn(twa, windKn) * Math.cos(twa * Math.PI / 180);
+}
+
+// Optimaler Kreuzwinkel: maximiert VMG beim Aufkreuzen
+function optimalTack(windKn) {
+  var bestVMG = 0, bestAngle = 44;
+  for(var a = 40; a <= 70; a += 0.5) {
+    var v = calcVMG(a, windKn);
+    if(v > bestVMG) { bestVMG = v; bestAngle = a; }
+  }
+  return { angle: bestAngle, vmg: bestVMG };
+}
+
+// Berechnung einer einzelnen Etappe unter Berücksichtigung von Kreuzschlägen
+function legCalc(a, b) {
+  var distNm = dist2([a.lat,a.lon],[b.lat,b.lon]) / 1852;
+  var brg = bearing([a.lat,a.lon],[b.lat,b.lon]);
+  var w = getWindAt((a.lat+b.lat)/2,(a.lon+b.lon)/2);
+  var windKn = parseFloat(knots(w.speed));
+  var twa = brg - w.dir;
+  while(twa > 180) twa -= 360; while(twa < -180) twa += 360;
+  var absTwa = Math.abs(twa);
+  var mode, sailedNm, timeH, effSpd, tackAngle=null;
+
+  if(absTwa < 40) {
+    // Nogo-Zone → muss kreuzen
+    var opt = optimalTack(windKn);
+    tackAngle = opt.angle;
+    // Tatsächlich gesegelte Distanz: Zickzack kostet extra Meilen
+    sailedNm = distNm / Math.cos(opt.angle * Math.PI / 180);
+    timeH = distNm / opt.vmg; // Zeit = Luftlinie / VMG (nicht gesegelte Dist!)
+    effSpd = opt.vmg;
+    mode = 'tack';
+  } else {
+    var spd = Math.max(0.4, polarSpeedKn(absTwa, windKn));
+    sailedNm = distNm;
+    timeH = distNm / spd;
+    effSpd = spd;
+    mode = absTwa < 65 ? 'close' : absTwa < 100 ? 'reach' : absTwa < 160 ? 'broad' : 'run';
+    tackAngle = null;
+  }
+  return { distNm:distNm, sailedNm:sailedNm, timeH:timeH, effSpd:effSpd,
+           twa:absTwa, mode:mode, tackAngle:tackAngle, brg:brg, wind:w, windKn:windKn };
 }
 
 function calcRoute(){
   if(waypoints.length<2){
-    ['rsDist','rsTime','rsWind'].forEach(function(id){document.getElementById(id).textContent='--';});
+    ['rsDist','rsSailed','rsTime','rsWind','rsTacks'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.textContent='--';
+    });
     document.getElementById('rsWP').textContent=waypoints.length;
     document.getElementById('hpRoute').textContent='Route: --';
     return;
   }
-  var td=0,tt=0,ws=[];
-  var maxSpd=7;
+  var totalDist=0, totalSailed=0, totalTime=0, tacks=0;
   for(var i=0;i<waypoints.length-1;i++){
-    var a=waypoints[i],b=waypoints[i+1];
-    var d=dist2([a.lat,a.lon],[b.lat,b.lon]);td+=d;
-    var w=getWindAt((a.lat+b.lat)/2,(a.lon+b.lon)/2);ws.push(w.speed);
-    var brg=bearing([a.lat,a.lon],[b.lat,b.lon]);
-    var wa=brg-w.dir;while(wa>180)wa-=360;while(wa<-180)wa+=360;
-    var spd=polarSpeed(wa,maxSpd,w.speed);if(spd<0.3)spd=0.3;
-    tt+=d/1852/spd;
+    var leg=legCalc(waypoints[i],waypoints[i+1]);
+    totalDist+=leg.distNm; totalSailed+=leg.sailedNm; totalTime+=leg.timeH;
+    if(leg.mode==='tack') tacks++;
   }
-  var nm=(td/1852).toFixed(1);
-  var aw=ws.reduce(function(a,b){return a+b;},0)/ws.length;
-  document.getElementById('rsDist').textContent=nm+' nm';
-  document.getElementById('rsTime').textContent=fmtH(tt);
+  var avgVMG = totalDist / totalTime;
+  document.getElementById('rsDist').textContent=totalDist.toFixed(1)+' nm';
+  document.getElementById('rsSailed').textContent=totalSailed.toFixed(1)+' nm';
+  document.getElementById('rsTime').textContent=fmtH(totalTime);
   document.getElementById('rsWP').textContent=waypoints.length;
-  document.getElementById('rsWind').textContent=Math.round(knots(aw))+' kn';
-  document.getElementById('hpRoute').textContent=nm+' nm · '+fmtH(tt);
+  document.getElementById('rsWind').textContent=avgVMG.toFixed(1)+' kn';
+  document.getElementById('rsTacks').textContent=tacks;
+  document.getElementById('hpRoute').textContent=totalDist.toFixed(1)+' nm · '+fmtH(totalTime);
 }
 
 function renderWpList(){
@@ -983,10 +1078,20 @@ function renderWpList(){
   el.innerHTML=waypoints.map(function(wp,i){
     var cls=i===0?'s':i===waypoints.length-1?'e':'m';
     var w=wp.wind||{speed:0,dir:0};
+    var legInfo='';
+    if(i<waypoints.length-1){
+      var leg=legCalc(wp,waypoints[i+1]);
+      var col=MODE_COLS[leg.mode]||'#fff';
+      var extra=leg.mode==='tack'
+        ? 'Kreuzen '+leg.tackAngle.toFixed(0)+'° · +'+((leg.sailedNm-leg.distNm)).toFixed(1)+'nm extra'
+        : leg.twa.toFixed(0)+'° TWA · '+leg.effSpd.toFixed(1)+' kn';
+      legInfo='<div style="font-size:8px;color:'+col+';margin-top:2px">'+MODE_LABELS[leg.mode]+' · '+fmtH(leg.timeH)+' · '+extra+'</div>';
+    }
     return '<div class="wp-item '+cls+'">'
       +'<div class="wp-info"><div class="wp-name">'+(i===0?'START':i===waypoints.length-1?'ZIEL':'WP '+i)+'</div>'
       +'<div class="wp-sub">'+wp.lat.toFixed(4)+'N '+wp.lon.toFixed(4)+'E</div>'
-      +'<div class="wp-wind">'+Math.round(knots(w.speed))+' kn '+dc(w.dir)+'</div></div>'
+      +'<div class="wp-wind">'+Math.round(knots(w.speed))+' kn '+dc(w.dir)+'</div>'
+      +legInfo+'</div>'
       +'<button class="wp-del" onclick="removeWP('+i+')">&#10005;</button></div>';
   }).join('');
 }
